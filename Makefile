@@ -14,5 +14,8 @@ all: $(BINS)
 $(BUILD)/%: %.c
 	$(CXX_CMD) $(CXX_FLAGS) $< -o $@
 
+install:
+	cp -v build/* ~/bin
+
 clean:
 	rm -v $(BUILD)/*
