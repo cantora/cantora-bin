@@ -1,0 +1,3 @@
+#!/bin/bash
+
+env -u SSH_AGENT_PID -u SSH_AUTH_SOCK $* 

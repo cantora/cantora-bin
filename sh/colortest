@@ -1,0 +1,4 @@
+#!/bin/sh
+ruby -r 'term/ansicolor' -e 'c = Term::ANSIColor; Term::ANSIColor::ATTRIBUTES.each {|x| print "#{x[0]} "; print c.send(x[0]); print "xxxx"; print c.clear;puts }; puts; '
+
+

@@ -16,6 +16,7 @@ $(BUILD)/%: %.c
 
 install:
 	cp -v build/* ~/bin
+	cp -v sh/* ~/bin
 
 clean:
 	rm -v $(BUILD)/*

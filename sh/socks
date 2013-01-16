@@ -1,0 +1,28 @@
+#!/bin/bash
+
+cd /tmp
+
+file=./proxychains.conf
+
+if [[ -z $1  && -z $2 ]]; then
+  echo "usage: $0 PORT CMD ARGS..."
+  exit 1
+fi
+
+echo > $file
+#echo 'quiet_mode' >> $file
+
+echo 'proxy_dns ' >> $file
+
+# Some timeouts in milliseconds
+echo 'tcp_read_time_out 15000' >> $file
+echo 'tcp_connect_time_out 8000' >> $file
+
+echo '[ProxyList]' >> $file
+echo "socks4 127.0.0.1 $1" >> $file
+
+cmd="proxychains $(echo $* | cut -d ' ' --complement -f 1)"
+
+echo $cmd
+$cmd
+
