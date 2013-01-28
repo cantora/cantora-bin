@@ -1,0 +1,20 @@
+#!/bin/sh
+
+domain=$(ruby -r uri -e 'puts URI.parse(ARGV[0]).host' $1)
+if [ -n $2 ]; then
+  exclude="--reject $2"
+else
+  exclude=''
+fi
+
+wget \
+  --recursive \
+  --page-requisites \
+  --html-extension \
+  --convert-links \
+  --restrict-file-names=unix \
+  --domains $domain \
+  --no-parent \
+  --reject=$2 \
+  $1
+
