@@ -1,4 +1,4 @@
-if !defined?(FSListParser)
+#!/usr/bin/env ruby
 
 require 'optparse'
 require 'optparse/time'
@@ -290,7 +290,4 @@ if $0 == __FILE__
 	options = FSListParser::FSListParserOpts::parse(ARGV)
 	fsl = FSListParser.new(options)
 	fsl.run
-end
-
-		
 end
