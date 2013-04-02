@@ -1,0 +1,103 @@
+#!/bin/bash
+
+#our script return value
+RETVAL=0
+#the path to our iptables command
+#IPT="echo iptables "
+IPT="/sbin/iptables"
+. /lib/lsb/init-functions
+
+# put allowed inbound ports here (seperated by spaces)
+ALLOW_INBOUND_TCP=""
+
+get_safe() {
+  $IPT -F
+  $IPT -X
+  $IPT -P INPUT DROP
+  $IPT -P FORWARD DROP
+  $IPT -P OUTPUT ACCEPT
+
+}
+
+stop() {
+  $IPT -F
+  $IPT -t nat -F
+  $IPT -X
+  $IPT -t nat -X
+  $IPT -P INPUT ACCEPT
+  $IPT -P FORWARD ACCEPT
+  $IPT -P OUTPUT ACCEPT
+
+}
+
+start() {
+  # |> call your get_safe function
+  get_safe
+  
+  # Enable free use of loopback interfaces
+  $IPT -A INPUT -i lo -j ACCEPT
+  $IPT -A OUTPUT -o lo -j ACCEPT
+
+  # All TCP sessions should begin with SYN
+  $IPT -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+
+  # Accept inbound packets that are already established
+  $IPT -A INPUT -j ACCEPT -m state --state ESTABLISHED,RELATED
+
+  # loop over the numbers in the ALLOW_INBOUND_TCP variable and execute a command like:
+  # $IPT -A INPUT -p tcp -j ACCEPT --dport FOO -m state --state NEW
+  # where FOO is replaced with each number (port) in turn
+  # similarly, loop over ALLOW_INBOUND_UDP, executing an identical command
+  # for each number (port) but with "-p tcp" replaced with "-p udp"
+  for i in $ALLOW_INBOUND_TCP; do
+    $IPT -A INPUT -p tcp -j ACCEPT --dport $i -m state --state NEW
+  done
+
+  $IPT -A INPUT -p udp -j ACCEPT
+
+  # Accept inbound ICMP messages
+  $IPT -A INPUT -p ICMP --icmp-type 8 -j ACCEPT
+  $IPT -A INPUT -p ICMP --icmp-type 11 -j ACCEPT
+
+}
+
+if [ $UID != "0" ]; then   
+  echo "you must be root to run this script"
+  exit 1
+fi
+
+case "$1" in 
+  start)
+    log_begin_msg "start firewall"
+
+    start
+    RETVAL=$?
+    log_end_msg $RETVAL
+    ;;
+  stop)
+    log_begin_msg "stop firewall"
+
+    stop
+    RETVAL=$?
+    log_end_msg $RETVAL
+    ;;
+  restart)
+    log_begin_msg "restart firewall"
+  
+    stop && start
+    RETVAL=$?
+    log_end_msg $RETVAL
+    ;;
+  status)
+    echo "firewall status:"
+    $IPT -L -n -v
+    ;;
+  *)
+    echo "usage: $0 CMD"
+    echo "    CMD := start | stop | restart | status"
+    RETVAL=1
+    ;;
+esac
+
+exit $RETVAL
+
