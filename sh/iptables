@@ -9,6 +9,7 @@ IPT="/sbin/iptables"
 
 # put allowed inbound ports here (seperated by spaces)
 ALLOW_INBOUND_TCP=""
+ALLOW_INBOUND_UDP=""
 
 get_safe() {
   $IPT -F
@@ -33,7 +34,7 @@ stop() {
 start() {
   # |> call your get_safe function
   get_safe
-  
+
   # Enable free use of loopback interfaces
   $IPT -A INPUT -i lo -j ACCEPT
   $IPT -A OUTPUT -o lo -j ACCEPT
@@ -50,15 +51,20 @@ start() {
   # similarly, loop over ALLOW_INBOUND_UDP, executing an identical command
   # for each number (port) but with "-p tcp" replaced with "-p udp"
   for i in $ALLOW_INBOUND_TCP; do
+    echo "allow incoming tcp port $i"
     $IPT -A INPUT -p tcp -j ACCEPT --dport $i -m state --state NEW
   done
 
-  $IPT -A INPUT -p udp -j ACCEPT
+  for i in $ALLOW_INBOUND_UDP; do
+    echo "allow incoming tcp port $i"
+    $IPT -A INPUT -p udp -j ACCEPT --dport $i 
+  done
 
   # Accept inbound ICMP messages
   $IPT -A INPUT -p ICMP --icmp-type 8 -j ACCEPT
   $IPT -A INPUT -p ICMP --icmp-type 11 -j ACCEPT
 
+  #default policy is drop
 }
 
 if [ $UID != "0" ]; then   
