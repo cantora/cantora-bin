@@ -15,8 +15,9 @@ $(BUILD)/%: %.c
 	$(CXX_CMD) $(CXX_FLAGS) $< -o $@
 
 install:
-	cp -vs $(CURDIR)/build/* ~/bin
-	cp -vs $(CURDIR)/sh/* ~/bin
+	mkdir -p ~/bin
+	cp -vs $(CURDIR)/build/* ~/bin/
+	cp -vs $(CURDIR)/sh/* ~/bin/
 
 clean:
 	rm -v $(BUILD)/*
