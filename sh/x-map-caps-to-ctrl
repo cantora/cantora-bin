@@ -1,3 +1,5 @@
 #!/bin/sh
 
+#add this line to /etc/xdb/lxsession/Lubuntu/autostart
+#in order to make this happen at startup in Lubuntu
 setxkbmap -option ctrl:nocaps
