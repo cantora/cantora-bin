@@ -16,8 +16,11 @@ $(BUILD)/%: %.c
 
 install:
 	mkdir -p ~/bin
+	chmod 755 $(CURDIR)/build/*
+	chmod 755 $(CURDIR)/sh/*
 	cp -vs $(CURDIR)/build/* ~/bin/
 	cp -vs $(CURDIR)/sh/* ~/bin/
+
 
 clean:
 	rm -v $(BUILD)/*
