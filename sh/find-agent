@@ -1,0 +1,11 @@
+#!/bin/sh
+
+agent=$(stat -c '%Y %n' /tmp/ssh-*/agent.* | sort -n | head -1 | cut -d ' ' -f 2)
+if [ -z "$agent" ]; then
+	echo "no ssh agent socket found in /tmp"
+	exit 1
+fi
+
+echo $agent
+export SSH_AUTH_SOCK=$agent
+
