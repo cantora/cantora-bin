@@ -1,0 +1,31 @@
+#!/bin/sh
+
+prefix=$(mktemp)
+if [ ! -f "$prefix" ]; then
+	echo "failed to create temporary file"
+	exit 1
+fi
+
+cat - > $prefix
+
+for i in $*; do
+	if [ ! -f $i ]; then
+		echo "$i is not a file. skipping..."
+		continue
+	fi
+	
+	tmpfile=$(mktemp)
+	if [ ! -f "$tmpfile" ]; then
+		echo "failed to create temporary file"
+		exit 1
+	fi
+
+	echo "prepend to $i"
+	cat $prefix $i > $tmpfile && cp $tmpfile $i && rm $tmpfile
+	if [ ! $? ]; then
+		echo "failed to modify $i for some reason"
+		eixt 1
+	fi
+done
+
+rm $prefix
