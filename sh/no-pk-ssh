@@ -1,0 +1,3 @@
+#!/bin/sh
+
+ssh -o PreferredAuthentications=gssapi-with-mic,hostbased,keyboard-interactive,password $*
