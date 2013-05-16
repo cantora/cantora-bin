@@ -1,0 +1,15 @@
+#!/bin/sh
+
+echo 'YYYY: '
+read YYYY
+
+echo 'MM: '
+read MM
+
+echo 'DD: '
+read DD
+
+echo 'hh: '
+read hh
+
+sudo date "${MM}${DD}${hh}00${YYYY}"
