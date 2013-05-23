@@ -14,7 +14,7 @@ all: $(BINS)
 $(BUILD)/%: %.c
 	$(CXX_CMD) $(CXX_FLAGS) $< -o $@
 
-install:
+install: $(BINS)
 	mkdir -p ~/bin
 	chmod 755 $(CURDIR)/build/*
 	chmod 755 $(CURDIR)/sh/*
