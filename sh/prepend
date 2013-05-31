@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if [ -z "$*" ]; then
+	echo "usage: $0 FILE [FILE ...]"
+	echo "  (prepend data should be given to stdin)"
+	exit 1
+fi
+
 prefix=$(mktemp)
 if [ ! -f "$prefix" ]; then
 	echo "failed to create temporary file"
