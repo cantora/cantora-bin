@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ -z "$1" -o -z "$2" ]; then
+  echo "usage: $0 AUTHOR PROJECT_NAME"
+  exit 1
+fi
+
 echo "/* "
 echo " * Copyright $(date +%Y) $1"
 cat <<HEADER
