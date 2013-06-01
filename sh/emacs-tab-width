@@ -1,0 +1,23 @@
+#!/bin/sh
+
+if [ -z "$1" -o -z "$2" ]; then
+  echo "usage: $0 TAB-WIDTH DIR [DIR ...]"
+fi
+
+DIRLOCAL=$(cat <<EOF
+
+(
+  (nil . (
+    (tab-width . $1)
+  ))
+)
+EOF
+)
+
+for i in $*; do
+  if [ ! -d "$i" ]; then
+    continue
+  fi
+
+  echo $DIRLOCAL >> $i/.dir-locals.el
+done
