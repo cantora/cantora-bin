@@ -1,0 +1,34 @@
+#!/bin/sh
+
+PROC_FILE=/proc/sys/kernel/core_pattern
+
+usage() {
+	echo "usage: $0 [CORE_PATTERN]"
+	echo 
+	echo "	- if no arguments given, print current core pattern"
+	echo "	- if CORE_PATTERN is given, set the core pattern to"
+	echo "	  CORE_PATTERN. (you must be root to do this)."
+	echo
+}
+
+if [ -z "$1" ]; then
+	cat $PROC_FILE
+	exit 0
+fi
+
+if [ "$(echo $1 | head -c 1)" = "-" ]; then
+	usage
+	exit 1	
+fi
+
+if [ "$(id -u)" != "0" ]; then
+	echo "this script must be run as root to change the coredump pattern setting"
+	usage
+	exit 1
+fi
+
+echo "$1" > $PROC_FILE
+
+echo "new core pattern: "
+cat $PROC_FILE
+

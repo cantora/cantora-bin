@@ -1,0 +1,157 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+module RecvCore
+
+	class Cmd
+		
+		def initialize(opts = {})
+			@opts = opts
+
+		end
+
+		def run
+			#puts @opts.inspect
+			
+			self.send(CMDS[@opts[:cmd]], @opts)
+		end
+
+		def cmd_listen(opts)
+			require 'socket'
+			require 'fileutils'
+
+			FileUtils.mkdir_p(opts[:tmp])
+
+			server = TCPServer.new opts[:port]
+			m = Mutex.new
+			count = 0
+			
+			puts "started listener on port #{opts[:port].inspect}"
+
+			loop do
+				Thread.start(server.accept) do |client|
+					Thread.current.abort_on_exception = true
+					n = m.synchronize do
+						count += 1
+						count
+					end
+				
+					nstr = sprintf("%04d", n)
+					prefix = "[#{nstr}] "
+					puts prefix + "connect from #{client.remote_address.inspect}"
+
+					core_data = client.read
+					puts prefix + "=> got #{core_data.size.inspect} bytes"
+
+					fname = File.join(opts[:tmp], "core.#{nstr}")
+					File.open(fname, "w") do |f|
+						f << core_data
+					end
+
+					if !opts[:tmux_sess].nil?
+						puts prefix + "run gdb in tmux session #{opts[:tmux_sess].inspect}"
+						raise "tmux session name has a \"'\" in it!" if !opts[:tmux_sess].match(/\'/).nil?
+						
+						cmd = "tmux new-window -t '#{opts[:tmux_sess]}:' 'gdb -c #{fname}'"
+						system(cmd)
+					end
+
+					client.close
+					puts prefix + "closed"
+				end
+			end
+		end
+
+		def cmd_pattern(opts)
+			s = "|"
+			s << File.join(@opts[:agent_path], "nc") 
+			s << " #{opts[:host]} #{opts[:port]}"
+
+			puts s
+		end
+
+		CMDS = {
+			"pattern" => :cmd_pattern,
+			"listen" => :cmd_listen
+		}
+
+		def self.parse(argv)
+			options = {
+				:host				=> "localhost",
+				:port				=> 41414,
+				:agent_path			=> "/bin",
+				:tmp				=> "/tmp/recv_core"
+			}
+												
+			optparse = OptionParser.new do |opts|
+				opts.banner = "usage: #{File.basename(__FILE__)} [options] CMD"
+				opts.separator ""
+				opts.separator "CMD := #{CMDS.keys.join(", ")}"
+				opts.separator ""
+
+				pr = Proc.new do |txt|
+					opts.separator(" "*2 + txt)
+				end
+
+				pr.call("pattern options")
+
+				opts.on("--host HOST", "address of listener (DNS or IP). default: #{options[:host].inspect}") do |host|
+					options[:host] = host
+				end
+
+				opts.on("--agent-path PATH", "path to agent binary. default: #{options[:agent_path].inspect}") do |path|
+					options[:agent_path] = path
+				end
+
+				opts.separator ""
+				pr.call("listen options")
+
+				opts.on("--tmp PATH", "temp dir in which to put core files. default: #{options[:tmp].inspect}") do |dir|
+					options[:tmp] = dir
+				end
+
+				opts.on("--gdb-tmux SESSION", "open gdb in tmux SESSION.") do |tmux_sess|
+					options[:tmux_sess] = tmux_sess
+				end
+
+				opts.separator ""
+				pr.call("pattern/listen options")
+
+				opts.on("--port", Integer, "port of listener. default: #{options[:port].inspect}") do |port|
+					options[:port] = port
+				end
+
+				opts.separator ""
+				pr.call("common options")
+
+				opts.on("-h", "--help", "display this message.") do |cx_proc|
+					raise ArgumentError.new,  ""
+				end
+			end
+			
+			begin
+				optparse.parse!(argv)
+				
+				options[:cmd] = argv.shift
+				raise ArgumentError.new, "need a valid command!" if !CMDS.keys.include?(options[:cmd])
+
+			rescue ArgumentError => e
+				puts e.message if !e.message.empty?
+				puts optparse
+
+				exit(1)
+			end	
+			
+			return options
+		end #self.parse
+
+	end #Cmd
+end
+
+
+if $0 == __FILE__
+	options = RecvCore::Cmd::parse(ARGV)
+	rc = RecvCore::Cmd.new(options)
+	rc.run
+end

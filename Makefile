@@ -18,9 +18,10 @@ install: $(BINS)
 	mkdir -p ~/bin
 	chmod 755 $(CURDIR)/build/*
 	chmod 755 $(CURDIR)/sh/*
+	chmod 755 $(CURDIR)/rb/*
 	cp -vsn $(CURDIR)/build/* ~/bin/
 	cp -vsn $(CURDIR)/sh/* ~/bin/
-
+	cp -vsn $(CURDIR)/rb/* ~/bin/
 
 clean:
 	rm -v $(BUILD)/*
