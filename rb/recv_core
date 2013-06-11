@@ -20,6 +20,7 @@ module RecvCore
 		def cmd_listen(opts)
 			require 'socket'
 			require 'fileutils'
+			require 'timeout'
 
 			FileUtils.mkdir_p(opts[:tmp])
 
@@ -41,7 +42,23 @@ module RecvCore
 					prefix = "[#{nstr}] "
 					puts prefix + "connect from #{client.remote_address.inspect}"
 
-					core_data = client.read
+					core_data = ""
+					
+					begin 
+						Timeout::timeout(3) do
+							loop do
+								core_data << begin 
+									client.read_nonblock(4096) 
+								rescue Errno::EINTR
+								rescue EOFError
+									break
+								end
+							end
+						end
+					rescue Timeout::Error => e
+						puts prefix + "read timeout"
+					end
+
 					puts prefix + "=> got #{core_data.size.inspect} bytes"
 
 					fname = File.join(opts[:tmp], "core.#{nstr}")
