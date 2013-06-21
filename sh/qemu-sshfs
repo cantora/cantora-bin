@@ -1,0 +1,23 @@
+#!/bin/sh
+
+host="10.0.2.2"
+flags="-o cache=no"
+
+case "$1" in 
+	"up" ) 
+		if [ -n "$2" ]; then
+			host=$2
+		fi
+		sshfs $flags sshfs@${host}:~/qemu $HOME/from-host
+
+		;;
+	"down" )
+		fusermount -u $HOME/from-host	
+
+		;;
+	* )
+		echo "usage: qemu-vm-sshfs 'up'|'down' [host]"
+		exit 1
+	;;
+esac
+
