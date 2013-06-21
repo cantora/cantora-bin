@@ -1,0 +1,24 @@
+#!/bin/sh
+
+QEMU_PREFIX=$HOME/qemu
+DISKS=$QEMU_PREFIX/disks
+KERNELS=$QEMU_PREFIX/kernels
+
+VMS="rpi-arch"
+case "$1" in 
+	"rpi-arch" )
+		qemu-system-arm -cpu arm1176 -m 256 -M versatilepb \
+						-no-reboot -nographic \
+						-kernel $KERNELS/qemu-rpi.gz \
+						-append "root=/dev/sda2 panic=2 console=ttyAMA0 rw" \
+						-hda $DISKS/rpi-arch.qcow2 \
+						-net nic -net user,hostfwd=tcp::9999-:22
+		;;
+	* )
+		if [ -n "$1" ]; then 
+			echo "unknown qemu vm $1"
+		fi
+		echo "qemu vms: $VMS"
+		exit 1
+		;;
+esac
