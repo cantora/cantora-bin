@@ -2,17 +2,19 @@
 
 host="10.0.2.2"
 flags="-o cache=no"
+mp=$HOME/from-host
+mkdir -p $mp
 
 case "$1" in 
 	"up" ) 
 		if [ -n "$2" ]; then
 			host=$2
 		fi
-		sshfs $flags sshfs@${host}:~/qemu $HOME/from-host
+		sshfs $flags sshfs@${host}:~/qemu $mp
 
 		;;
 	"down" )
-		fusermount -u $HOME/from-host	
+		fusermount -u $mp
 
 		;;
 	* )
