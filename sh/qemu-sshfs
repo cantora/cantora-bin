@@ -10,7 +10,7 @@ case "$1" in
 		if [ -n "$2" ]; then
 			host=$2
 		fi
-		sshfs $flags sshfs@${host}:~/qemu $mp
+		sshfs $flags sshfs@${host}:qemu $mp
 
 		;;
 	"down" )
