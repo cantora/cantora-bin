@@ -1,0 +1,24 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+	echo "usage: $0 ENCRYPTED-TAR"
+	exit 1
+fi
+
+etype=aes-256-cbc
+
+TMP_DIR=$(mktemp -d)
+openssl enc \
+	-d -${etype} \
+	-in $1 \
+	-out $TMP_DIR/gpg.tar.bz2
+
+cd $TMP_DIR
+tar -xjvf gpg.tar.bz2
+cd gpg-files
+
+cp pubring.gpg $HOME/.gnupg/
+cp secring.gpg $HOME/.gnupg/
+gpg --import-ownertrust ownertrust-gpg.txt
+echo "imported pubring, secring and owner trust to ~/.gnupg"
+

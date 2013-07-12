@@ -1,0 +1,18 @@
+#!/bin/sh
+
+BKP_DIR=$(mktemp -d)
+FILES=$BKP_DIR/gpg-files
+mkdir $FILES
+cp ~/.gnupg/pubring.gpg $FILES
+cp ~/.gnupg/secring.gpg $FILES
+gpg --export-ownertrust > $FILES/ownertrust-gpg.txt
+
+etype=aes-256-cbc
+
+sh -c "cd $BKP_DIR && tar -cjvf gpg.tar.bz2 gpg-files"
+out=gpg-$(date +%Y%m%d%H%M%S).tar.bz2.${etype}
+
+openssl enc \
+	-${etype} \
+	-in $BKP_DIR/gpg.tar.bz2 \
+	-out $out
