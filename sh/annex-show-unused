@@ -1,0 +1,70 @@
+#!/bin/sh
+
+usage() {
+  echo "usage: $(basename $0) [REMOTE]"
+  echo 
+  echo "show information about unused files."
+  echo "uses local annex if REMOTE is not specified."
+}
+
+git annex status --quiet > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "this is not a git annex repo"
+  usage
+  exit 1
+fi
+
+remote=""
+if [ -n "$1" ]; then
+  for i in $(git remote); do
+    if [ "$1" = "$i" ]; then
+      remote="--from $i"
+    fi
+  done
+  if [ -z "$remote" ]; then
+    echo "unknown remote '$1'"
+    usage
+    exit 1
+  fi
+fi
+
+echo "check for unused data"
+tmp=$(mktemp)
+git annex unused $remote > $tmp
+cat $tmp
+
+repeat() {
+  for i in $(seq 1 $1); do echo -n $2; done
+}
+
+header() {
+  width=$(seq 1 $1)
+  repeat $1 $2
+  echo -n $3
+  repeat $1 $2
+}
+
+grep -Ei 'Some annexed data .+? (not|no longer) used by any files' $tmp >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "no unused data found"
+else
+  echo "previous usage:"
+  start_reg='\s+[0-9]+\s+'
+  
+  for i in $(grep -oE "${start_reg}.*" $tmp | sed -E "s/${start_reg}//"); do 
+    hdr=$(header 6 '+' $i)
+    ftr=$(header 6 '-' $i)
+    hdr_len=$(echo -n $hdr | wc -m )
+    h_buf=$(repeat $hdr_len '+')
+    f_buf=$(repeat $hdr_len '-')
+
+    echo $h_buf
+    echo $hdr
+    echo $h_buf    
+    git log --numstat -S"$i"
+    echo $f_buf
+    echo $ftr
+    echo $f_buf
+    echo  
+  done
+fi
