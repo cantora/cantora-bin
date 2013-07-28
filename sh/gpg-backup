@@ -16,3 +16,8 @@ openssl enc \
 	-${etype} \
 	-in $BKP_DIR/gpg.tar.bz2 \
 	-out $out
+
+cd $BKP_DIR 
+rm gpg.tar.bz2
+rm -f gpg-files/*
+rmdir gpg-files
