@@ -1,4 +1,4 @@
 #!/bin/sh
 
-git annex find --format='${humansize}\t\t\t${file}\n'
+git annex find --format='${humansize}\t\t\t${file}\n' $*
 
