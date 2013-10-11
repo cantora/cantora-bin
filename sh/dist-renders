@@ -1,0 +1,49 @@
+#!/bin/bash
+
+ENCODER=lame
+ENC_OPTS='-v --preset standard'
+USAGE="usage: $0 OUTPUT_PATH FILE [FILE ...]"
+
+if [ -z "$1" -o -z "$2" ]; then
+	echo $USAGE
+	exit 1
+fi
+
+OUTPUT_PATH=$1
+if [ -e "$OUTPUT_PATH" ]; then
+	echo "output path $OUTPUT_PATH already exists"
+	echo $USAGE
+	exit 1
+fi
+
+dest=$(mktemp -d)
+if [ $? -ne 0 ]; then
+	echo "failed to create temp dir"
+	exit 1
+fi
+
+skip="1"
+for input in $*; do
+	if [ $skip = "1" ]; then
+		skip="0" # skip the output file
+		continue
+	fi
+
+	outfile=$(basename $input).mp3
+	cmd="$ENCODER $ENC_OPTS $input $dest/$outfile"
+	echo "########################################################################"
+	echo "############ $input"
+	echo "########################################################################"
+	echo "run: $cmd"
+	$cmd
+done
+
+pushd $dest
+zip output.zip *
+echo "created zip archive"
+popd
+mv $dest/output.zip $OUTPUT_PATH
+echo "create output $OUTPUT_PATH"
+pushd $dest && rm *.mp3; popd
+rmdir $dest
+echo "cleanup done."
