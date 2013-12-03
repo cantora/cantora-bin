@@ -1,0 +1,24 @@
+#!/bin/bash
+
+source cantora-shlib.sh
+
+push () {
+  dir_arg $1
+  pushd $1 > /dev/null
+}
+
+pop () {
+  popd > /dev/null
+}
+
+git --version > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  err_exit 'git is not installed'
+fi
+
+for i in */.git/..; do
+  push $i
+  printf '<%s>\n' $(basename $(pwd))
+  gitstat 2
+  pop  
+done

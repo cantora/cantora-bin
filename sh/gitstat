@@ -1,0 +1,108 @@
+#!/bin/bash
+
+#usage: 
+#  $1 <- number of prefix spaces for output
+
+source cantora-shlib.sh
+
+output_prefix () {
+  prefix_n_spaces $1
+  printf '[+] '
+}
+
+notify_untracked () {
+  file_arg $1
+  grep '^?? ' $STAT > /dev/null
+  if [ $? -eq 0 ]; then
+    output_prefix $2
+    printf 'untracked files\n'
+  fi
+}
+
+notify_local_changes () {
+  file_arg $1
+  grep '^[^?][^?] ' $STAT > /dev/null
+  if [ $? -eq 0 ]; then
+    output_prefix $2
+    printf 'local changes\n'
+  fi
+}
+
+branches () {
+  git branch --list | grep -v '^* ' | sed 's/^  //'
+}
+
+notify_nonpushed_refs () {
+  non_empty_str_arg $1
+
+  PSH=$(mktemp)
+  git push origin $1 --dry-run --porcelain 2>/dev/null | tail -n +2 | head -n -1 > $PSH
+
+  grep '^!' $PSH > /dev/null
+  if [ $? -eq 0 ]; then
+    output_prefix $2
+    printf 'has rejected refs\n'
+  fi
+
+  grep '^[^=!]' $PSH > /dev/null
+  if [ $? -eq 0 ]; then
+    output_prefix $2
+    printf 'has non-pushed refs\n'
+  fi
+
+  rm -f $PSH
+}
+
+branch_header () {
+  prefix_n_spaces $2
+  printf '[%s]\n' $1
+}
+
+check_local () {
+  STAT=$(mktemp)
+  git status --porcelain > $STAT
+  BRANCH=$(git status -b | head -1 | cut -d ' ' -f 4)
+
+  branch_header $BRANCH $1
+
+  new_width=$(($1 + 2))
+  notify_untracked $STAT $new_width
+  notify_local_changes $STAT $new_width
+  notify_nonpushed_refs $BRANCH $new_width
+
+  rm -f $STAT
+}
+
+cat_if_gt_1_line () {
+  file_arg $1
+
+  if [ $(cat $1 | wc -l) -gt 1 ]; then
+    cat $1
+  fi
+}
+
+check_branches () {
+  file_arg $1
+
+  child_width=$(($2 + 2))
+
+  for BRANCH in $(branches); do
+    branch_header $BRANCH $2 > $1
+    notify_nonpushed_refs $BRANCH $child_width >> $1
+    cat_if_gt_1_line $1
+  done
+}
+
+git --version > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  err_exit 'git is not installed'
+fi
+
+OUT=$(mktemp)
+
+check_local $1 > $OUT
+cat_if_gt_1_line $OUT
+
+check_branches $OUT $1
+
+rm -f $OUT
