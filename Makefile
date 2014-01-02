@@ -19,9 +19,9 @@ install: $(BINS)
 	chmod 755 $(CURDIR)/build/*
 	chmod 755 $(CURDIR)/sh/*
 	chmod 755 $(CURDIR)/rb/*
-	cp -vsn $(CURDIR)/build/* ~/bin/
-	cp -vsn $(CURDIR)/sh/* ~/bin/
-	cp -vsn $(CURDIR)/rb/* ~/bin/
+	cd ~/bin && for f in $(CURDIR)/build/*; do ln -s $$f; done
+	cd ~/bin && for f in $(CURDIR)/sh/*; do ln -s $$f; done
+	cd ~/bin && for f in $(CURDIR)/rb/*; do ln -s $$f; done
 
 clean:
 	rm -v $(BUILD)/*
