@@ -7,16 +7,26 @@ fi
 
 etype=aes-256-cbc
 
-TMP_DIR=$(mktemp -d)
+if [ "$(uname)" = "Darwin" ]; then
+	TMP_DIR=$(mktemp -d -t tmp)
+else
+	TMP_DIR=$(mktemp -d)
+fi
+
 openssl enc \
 	-d -${etype} \
 	-in $1 \
 	-out $TMP_DIR/gpg.tar.bz2
+if [ $? -ne 0 ]; then
+	echo "failed to decrypt"
+	exit 1
+fi
 
 cd $TMP_DIR
 tar -xjvf gpg.tar.bz2
 cd gpg-files
 
+mkdir -p $HOME/.gnupg/
 cp pubring.gpg $HOME/.gnupg/
 cp secring.gpg $HOME/.gnupg/
 gpg --import-ownertrust ownertrust-gpg.txt

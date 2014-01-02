@@ -1,6 +1,11 @@
 #!/bin/sh
 
-BKP_DIR=$(mktemp -d)
+if [ "$(uname)" = "Darwin" ]; then
+	BKP_DIR=$(mktemp -d -t tmp)
+else
+	BKP_DIR=$(mktemp -d)
+fi
+
 FILES=$BKP_DIR/gpg-files
 mkdir $FILES
 cp ~/.gnupg/pubring.gpg $FILES
@@ -16,6 +21,10 @@ openssl enc \
 	-${etype} \
 	-in $BKP_DIR/gpg.tar.bz2 \
 	-out $out
+if [ $? -ne 0 ]; then
+	echo "failed to encrypt"
+	exit 1
+fi
 
 cd $BKP_DIR 
 rm gpg.tar.bz2
