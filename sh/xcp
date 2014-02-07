@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ -z "$DISPLAY" ]; then
+  display=:0
+else
+  display=$DISPLAY
+fi
+
+xclip -display "$display" -selection clipboard -in < /dev/stdin
+ 
