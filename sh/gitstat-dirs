@@ -23,7 +23,7 @@ fi
 for i in */.git/..; do
   push $i
   NAME=$(basename $(pwd))
-  if [ -f $IGNORE ]; then
+  if [ "$IGNORE" -a -f $IGNORE ]; then
     grep "$(printf '^%s *$' $NAME)" $IGNORE > /dev/null
     if [ $? -eq 0 ]; then
       printf '(ignoring %s)\n' $NAME
