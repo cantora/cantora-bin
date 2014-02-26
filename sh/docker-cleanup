@@ -1,0 +1,38 @@
+#!/bin/sh
+
+tmp=$(mktemp)
+
+cleanup () {
+  if [ -n "$tmp" ]; then
+    rm -f $tmp
+  fi
+}
+
+err_exit () {
+  echo "error: $1"
+  cleanup
+  exit 1
+}
+
+docker ps -a > $tmp || err_exit 'docker error...'
+lines=$(cat $tmp | wc -l)
+if [ "$lines" = "0" -o "$lines" = "1" ]; then
+  echo 'no containers to delete'
+  cleanup
+  exit 0
+fi
+
+echo 'delete all of these containers:'
+cat $tmp
+printf 'continue? y/n: '
+read cont
+
+if [ "$cont" != "y" ]; then
+  echo 'abort...'
+  cleanup
+  exit 0
+fi
+
+docker ps -a --no-trunc -q | xargs docker rm
+echo 'deleted all containers'
+cleanup
