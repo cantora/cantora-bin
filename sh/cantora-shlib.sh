@@ -5,8 +5,11 @@
 #use "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 #to get the script dir for sourcing this file
 
+errecho () {
+  echo $* >&2
+}
 err_exit () {
-  echo "$0 error: $1"
+  errecho "$0 error: $1"
   exit 1
 }
 

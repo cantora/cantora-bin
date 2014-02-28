@@ -3,8 +3,8 @@
 source cantora-shlib.sh
 
 encrypt_types () {
-  echo 'password encryption types:'
-  cat <<ENCTYPES
+  errecho 'password encryption types:'
+  cat >&2 <<ENCTYPES
     1   | MD5
     2a  | Blowfish (not in mainline glibc; added in some Linux distributions)
     5   | SHA-256 (since glibc 2.7)
@@ -13,7 +13,7 @@ ENCTYPES
 }
 
 usage () {
-  echo "usage: $(basename $0) [ID] [PASSWORD]"
+  errecho "usage: $(basename $0) [ID] [PASSWORD]"
   encrypt_types
   exit 1
 }
@@ -23,8 +23,7 @@ help_flag_exists "$*" && usage
 if [ -z "$1" ]; then
   encrypt_types
   while [ -z "$enctype" ]; do
-    printf 'password encryption type: '
-    read enctype
+    read -p 'password encryption type: ' enctype
   done
 else
   enctype=$1
@@ -34,9 +33,9 @@ if [ -z "$2" ]; then
   confirm=null
   while [ -z "$password" -o "$confirm" != "$password" ]; do
     read -p 'password: ' -s password
-    echo
+    errecho
     read -p 'confirm: ' -s confirm
-    echo
+    errecho
   done
 else
   password=$2
@@ -56,7 +55,7 @@ for i in range(16):
 salt = "$%s$%s$" % ("$enctype", "".join(chars))
 encpass = crypt.crypt("$password", salt)
 if not encpass or len(encpass) < 1:
-  print("error: invalid result. perhaps the algorithm ID used was not valid.")
+  sys.stderr.write("error: invalid result. perhaps the algorithm ID used was not valid.\n")
 else:
   print(encpass)
 
