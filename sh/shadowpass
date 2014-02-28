@@ -1,0 +1,64 @@
+#!/bin/bash
+
+source cantora-shlib.sh
+
+encrypt_types () {
+  echo 'password encryption types:'
+  cat <<ENCTYPES
+    1   | MD5
+    2a  | Blowfish (not in mainline glibc; added in some Linux distributions)
+    5   | SHA-256 (since glibc 2.7)
+    6   | SHA-512 (since glibc 2.7)
+ENCTYPES
+}
+
+usage () {
+  echo "usage: $(basename $0) [ID] [PASSWORD]"
+  encrypt_types
+  exit 1
+}
+
+help_flag_exists "$*" && usage
+
+if [ -z "$1" ]; then
+  encrypt_types
+  while [ -z "$enctype" ]; do
+    printf 'password encryption type: '
+    read enctype
+  done
+else
+  enctype=$1
+fi
+
+if [ -z "$2" ]; then
+  confirm=null
+  while [ -z "$password" -o "$confirm" != "$password" ]; do
+    read -p 'password: ' -s password
+    echo
+    read -p 'confirm: ' -s confirm
+    echo
+  done
+else
+  password=$2
+fi
+
+python - <<PYSCRIPT
+import crypt
+import sys
+import random
+
+ALPHABET = list(range(0x30, 0x3a)) \
+           + list(range(0x41, 0x5b)) \
+           + list(range(0x61, 0x7b))
+chars = []
+for i in range(16):
+  chars.append(chr(random.choice(ALPHABET)))
+salt = "$%s$%s$" % ("$enctype", "".join(chars))
+encpass = crypt.crypt("$password", salt)
+if not encpass or len(encpass) < 1:
+  print("error: invalid result. perhaps the algorithm ID used was not valid.")
+else:
+  print(encpass)
+
+PYSCRIPT
+

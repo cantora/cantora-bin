@@ -31,3 +31,17 @@ non_empty_str_arg () {
 prefix_n_spaces () {
   printf "%-${1}s" 
 }
+
+help_flag_exists () {
+  echo " $1 " | grep -i ' --\?h\(elp\)\? ' > /dev/null
+  if [ $? = 0 ]; then
+    return 0
+  fi
+
+  echo " $1 " | grep -i ' -? ' > /dev/null
+  if [ $? = 0 ]; then
+    return 0
+  fi
+
+  return 1
+}
