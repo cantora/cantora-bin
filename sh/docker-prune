@@ -1,0 +1,37 @@
+#!/bin/sh
+
+tmp=$(mktemp)
+
+cleanup () {
+  if [ -n "$tmp" ]; then
+    rm -f $tmp
+  fi
+}
+
+err_exit () {
+  echo "error: $1"
+  cleanup
+  exit 1
+}
+
+docker images | grep '<none>' | awk '{ print $3; }' > $tmp || err_exit 'docker error...'
+lines=$(cat $tmp | wc -l)
+if [ "$lines" = "0" -o "$lines" = "1" ]; then
+  echo 'no images to delete'
+  cleanup
+  exit 0
+fi
+
+echo 'delete all of these images:'
+cat $tmp
+printf 'continue? y/n: '
+read cont
+
+if [ "$cont" != "y" ]; then
+  echo 'abort...'
+  cleanup
+  exit 0
+fi
+
+cat $tmp | xargs docker rmi
+cleanup
