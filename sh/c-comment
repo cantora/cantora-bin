@@ -1,5 +1,5 @@
 #!/bin/sh
 
 echo '/* '
-sed 's/^/ * /' <&0
+sed 's/^/ * /' | sed 's/^ \* $/ */' <&0
 echo ' */'
