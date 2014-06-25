@@ -34,10 +34,9 @@ enable_status () {
 main_in_emacs () {
   prev=$(prev_session)
   if session_exists "$prev"; then
+    enable_status
     switch_session "$prev"
   fi
-
-  enable_status
 }
 
 main_not_in_emacs () {
