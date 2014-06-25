@@ -23,14 +23,21 @@ switch_session () {
   tmux switch-client -t "$1"
 }
 
+disable_status () {
+  tmux set -g status off > /dev/null
+}
+
+enable_status () {
+  tmux set -g status on > /dev/null
+}
+
 main_in_emacs () {
   prev=$(prev_session)
   if session_exists "$prev"; then
     switch_session "$prev"
-    return 0
   fi
 
-  return 1
+  enable_status
 }
 
 main_not_in_emacs () {
@@ -39,6 +46,7 @@ main_not_in_emacs () {
     env -u TMUX tmux new-session -s emacs -d 'emacsclient -c'
   fi
   switch_session "$EMACS_SESS"
+  disable_status
 }
 
 main () {
