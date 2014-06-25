@@ -1,0 +1,18 @@
+#!/bin/sh
+
+sessions=$(tmux list-sessions -F '#S')
+
+list=""
+for sess in $sessions; do
+  if [ "$sess" = "emacs" ]; then
+    continue
+  fi
+
+  if [ -z $list ]; then
+    list="$sess"
+  else
+    list="${list},${sess}"
+  fi
+done
+
+tmux choose-list -l "$list" 'switch-client -t "%%"'
