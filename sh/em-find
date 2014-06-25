@@ -1,0 +1,11 @@
+#!/bin/sh
+
+source cantora-shlib.sh
+
+if [ -z "$1" ]; then
+  echo "em-find FILE [FILE ...]"
+fi
+
+for file; do
+  emacsclient -e "(find-file \"$file\")"
+done
