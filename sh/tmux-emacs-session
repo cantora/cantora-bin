@@ -1,0 +1,55 @@
+#!/bin/sh
+
+EMACS_SESS="emacs"
+
+is_tmux () {
+  test -n "$TMUX"
+}
+
+current_session () {
+  tmux display-message -p '#S'
+}
+
+prev_session () {
+  tmux display-message -p '#{client_last_session}'
+}
+
+session_exists () {
+  tmux has-session -t "$1" >/dev/null 2>&1
+}
+
+switch_session () {
+  #echo "switch to session $1"
+  tmux switch-client -t "$1"
+}
+
+main_in_emacs () {
+  prev=$(prev_session)
+  if session_exists "$prev"; then
+    switch_session "$prev"
+    return 0
+  fi
+
+  return 1
+}
+
+main_not_in_emacs () {
+  if ! session_exists "$EMACS_SESS"; then
+    #echo 'create emacs session'
+    env -u TMUX tmux new-session -s emacs -d 'emacsclient -c'
+  fi
+  switch_session "$EMACS_SESS"
+}
+
+main () {
+  sname=$(current_session)
+  if [ "$sname" = "$EMACS_SESS" ]; then
+    #echo 'in emacs'
+    main_in_emacs
+  else
+    main_not_in_emacs
+  fi
+}
+
+main
+
