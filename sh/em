@@ -1,0 +1,25 @@
+#!/bin/sh
+
+source cantora-shlib.sh
+
+usage () {
+  echo "em SUBCOMMAND ARGS"
+  echo "  subcommands:"
+  for i in $(dirname $0)/em-*; do
+    subcommand=$(basename $i | sed 's/^em-//')
+    echo "    $subcommand"
+  done
+}
+
+if help_flag_exists $@; then
+  usage
+  exit 1
+fi
+
+non_empty_str_arg $1
+
+subcommand="em-${1}"
+
+for x; do
+  echo $x
+done
