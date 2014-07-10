@@ -1,0 +1,22 @@
+#!/bin/bash
+
+cols=$(tput cols)
+
+if [ -z "$COLS" ]; then
+  cols=80
+fi
+
+for file; do
+  for i in $(seq 1 $cols); do
+    printf '_'
+    #echo $i
+  done
+  echo
+  echo $file
+  if [ -d "$file" ]; then
+    echo 'skipping directory'
+  else
+    cat $file
+  fi
+  echo
+done
