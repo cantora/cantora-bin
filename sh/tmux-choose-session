@@ -8,6 +8,10 @@ for sess in $sessions; do
     continue
   fi
 
+  if echo $sess | grep '^_'; then
+    continue
+  fi
+
   if [ -z $list ]; then
     list="$sess"
   else
