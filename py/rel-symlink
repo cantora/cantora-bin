@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+
+import sys
+import os.path
+
+def err_exit(s):
+  sys.stderr.write(s + '\n')
+  sys.exit(1)
+
+def warn(s):
+  sys.stderr.write(s + '\n')
+
+def chdir(dir):
+  warn('change cwd to %s' % dir)
+  os.chdir(dir)
+
+def run(link):
+  try:
+    link_dest = os.readlink(link)
+  except FileNotFoundError as e:
+    warn('file not found: %r' % link)
+    return
+  except OSError as e:
+    warn('could not read link, %s' % e)
+    return
+
+  if link_dest[0] != '/':
+    warn('link is not absolute: %r' % link_dest)
+    return
+
+  #linkname = os.path.basename(link)
+  dirname = os.path.abspath(os.path.dirname(link))
+
+  #print(repr(link_dest))
+  #print(repr(cwd))
+  rel_path = os.path.relpath(link_dest, dirname)
+
+  print('%s -> %s' % (link, rel_path))
+
+  cmd = 'rm %r' % link
+  #print('cmd = %r' % cmd)
+  os.system(cmd)
+
+  cmd = 'ln -s %r %r' % (rel_path, link)
+  #print('cmd = %r' % cmd)
+  os.system(cmd)
+
+
+argv = sys.argv[1:]
+if not len(argv):
+  err_exit('usage: %s ABSOLUTE_SYMLINK [ABSOLUTE_SYMLINK ...]' % sys.argv[0])
+
+for link in argv:
+  run(link)

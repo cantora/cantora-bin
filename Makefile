@@ -19,9 +19,11 @@ install: $(BINS)
 	chmod 755 $(CURDIR)/build/*
 	chmod 755 $(CURDIR)/sh/*
 	chmod 755 $(CURDIR)/rb/*
+	chmod 755 $(CURDIR)/py/*
 	cd ~/bin && for f in $(CURDIR)/build/*; do ln -fs $$f; done
 	cd ~/bin && for f in $(CURDIR)/sh/*; do ln -fs $$f; done
 	cd ~/bin && for f in $(CURDIR)/rb/*; do ln -fs $$f; done
+	cd ~/bin && for f in $(CURDIR)/py/*; do ln -fs $$f; done
 
 clean:
 	rm -v $(BUILD)/*
