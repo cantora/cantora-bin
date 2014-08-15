@@ -1,0 +1,39 @@
+#!/bin/sh
+
+overrides=""
+function cleanup {
+  for f in $overrides; do
+    rm -f $f
+  done
+  rmdir $tmpdir
+  exit
+}
+
+function usage {
+  echo "usage: $0 EXEC ALIAS [EXEC ALIAS ...]"
+}
+
+if [ "$#" -lt 2 ]; then
+  usage
+  exit 1
+fi
+
+tmp=$(mktemp)
+rm -f $tmp
+tmpdir=$HOME/.$(basename $tmp)
+mkdir -p $tmpdir
+trap cleanup SIGHUP SIGINT SIGTERM
+
+while (( "$#" )); do
+  [ -z "$1" -o -z "$2" ] && break
+  path=$(realpath $1)
+  als=$tmpdir/$2
+  ln -s $path $als
+  overrides="$overrides $als"
+  shift
+  shift
+done
+
+env PATH="$tmpdir:$PATH" $SHELL
+
+cleanup
