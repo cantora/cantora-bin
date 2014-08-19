@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+  echo "usage tmux-log-pane FILE"
+  exit 1
+fi
+
+fpath=$(realpath $1)
+if [ $? -ne 0 ]; then
+  echo "failed to find real path of $1"
+  exit 1
+fi
+
+echo logging to file $fpath
+tmux pipe-pane -o "exec cat >> '$fpath'"
