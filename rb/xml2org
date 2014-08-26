@@ -1,0 +1,146 @@
+#!/usr/bin/env ruby
+
+require 'nokogiri'
+
+class EventListener
+
+  def self.on(event_type, &bloc)
+    self.event_table[event_type] = bloc
+  end
+
+  def self.event_table()
+    @event_table_hash ||= {}
+    return @event_table_hash
+  end
+
+  def initialize
+    @depth = 0
+    @body = false
+  end
+
+  def out(*args)
+    print("*"*(@depth+1))
+    print(" ")
+    print(*args)
+  end
+
+  def method_missing(m, *args, **kwargs, &bloc)
+    fn = self.class.event_table[m]
+    if fn
+      instance_exec(*args, **kwargs, &fn)
+    else
+      s = "#{m.inspect}:"
+      s << " #{args.inspect}" if args
+      s << " #{kwargs.inspect}" if kwargs
+      s << " [bloc]" if bloc
+      $stdout.puts("unknown element: #{s}")
+    end
+  end
+
+  on(:xmldecl) do
+    #nothing
+  end
+
+  on(:start_document) do
+    #nothing
+  end
+
+  on(:end_document) do
+    #nothing
+  end
+
+  def attribute_to_str(attr)
+    name = []
+    name << attr.uri if attr.uri
+    name << attr.prefix if attr.prefix
+    name << attr.localname
+    return "#{name.join("/")}=#{attr.value.inspect}"
+  end
+
+  def on_start_element(name, attrs=[], prefix=nil, uri=nil, ns=[])
+    if name.strip.empty?
+      raise Exception("empty name!")
+    end
+    print("\n") if @body
+    s = name.to_s
+    s << " prefix=#{prefix.inspect}" if prefix
+    s << " uri=#{uri.inspect}" if uri
+    s << " ns=#{ns.inspect}\n" if !ns.empty?
+    attr_str = attrs.map do |attr|
+      attribute_to_str(attr)
+    end.join(", ")
+    s << "attrs: #{attr_str}" if attr_str
+    s << "\n"
+    self.out(s)
+    @body = false
+    @depth += 1
+  end
+
+  def on_end_element(name, prefix=nil, uri=nil)
+    print("\n") if @body
+    @body = false
+    @depth -= 1
+  end
+
+  def on_characters(s)
+    s2 = s.strip
+    if !s2.empty?
+      print(s2)
+      @body = true
+    end
+  end
+
+  on(:start_element_namespace) do |name, attrs, prefix, uri, ns|
+    on_start_element(name, attrs, prefix, uri, ns)
+  end
+
+  on(:start_element) do |name, attrs|
+    on_start_element(name, attrs, nil, nil, [])
+  end
+
+  on(:end_element_namespace) do |name, prefix, uri|
+    on_end_element(name, prefix, uri)
+  end
+
+  on(:end_element) do |name|
+    on_end_element(name, nil, nil)
+  end
+
+  on(:characters) do |s|
+    on_characters(s)
+  end
+
+  on(:comment) do |s|
+    s.lines.each do |line|
+      on_characters("# " + line)
+      print("\n")
+    end
+  end
+
+  on(:warning) do |s|
+    s.lines.each do |line|
+      on_characters("!! " + line)
+      print("\n")
+    end
+  end
+
+  on(:error) do |s|
+    on_characters("error: #{s.inspect}")
+  end
+
+  on(:cdata_block) do |s|
+    on_characters("cdata: #{s.inspect}")
+  end
+
+  on(:processing_instruction) do |name, content|
+    s = "processing instruction: "
+    s << "#{name.inspect}=#{content.inspect}"
+    on_characters(s)
+  end
+end
+
+# Create a new parser
+parser = Nokogiri::XML::SAX::Parser.new(EventListener.new)
+
+# Feed the parser some XML
+parser.parse(File.open(ARGV[0]))
