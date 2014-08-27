@@ -33,7 +33,7 @@ class EventListener
       s << " #{args.inspect}" if args
       s << " #{kwargs.inspect}" if kwargs
       s << " [bloc]" if bloc
-      $stdout.puts("unknown element: #{s}")
+      $stderr.puts("unknown element: #{s}")
     end
   end
 
@@ -69,7 +69,7 @@ class EventListener
     attr_str = attrs.map do |attr|
       attribute_to_str(attr)
     end.join(", ")
-    s << "attrs: #{attr_str}" if attr_str
+    s << " attrs: #{attr_str}" if !attr_str.empty?
     s << "\n"
     self.out(s)
     @body = false
