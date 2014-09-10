@@ -1,0 +1,3 @@
+#!/bin/sh
+
+nix-store -q --references /var/run/current-system/sw
