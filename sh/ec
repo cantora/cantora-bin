@@ -2,3 +2,4 @@
 
 em-find $@ &
 tmux-emacs-session
+echo
