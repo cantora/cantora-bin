@@ -1,0 +1,29 @@
+#!/bin/sh
+
+PREFIX_A="q"
+PREFIX_B="z"
+
+main () {
+  current=$(tmux show-options -g prefix)
+  if [ -z "$current" ]; then
+    echo 'empty current prefix'
+    return 1
+  fi
+
+  prefix_a="prefix C-${PREFIX_A}"
+  prefix_b="prefix C-${PREFIX_B}"
+  if [ "$current" = "$prefix_a" ]; then
+    new_prefix="$prefix_b"
+  elif [ "$current" = "$prefix_b" ]; then
+    new_prefix="$prefix_a"
+  else
+    echo "invalid current prefix: $current"
+    return 1
+  fi
+
+  tmux set-option -g $new_prefix > /dev/null
+  return 0
+}
+
+test -n "$TMUX" || exit
+main
