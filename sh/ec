@@ -1,4 +1,4 @@
 #!/bin/sh
 
-em-find $@
+em-find $@ &
 tmux-emacs-session

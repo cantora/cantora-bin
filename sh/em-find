@@ -4,6 +4,7 @@ source cantora-shlib.sh
 
 if [ -z "$1" ]; then
   echo "em-find FILE [FILE ...]"
+  exit 1
 fi
 
 for file; do
