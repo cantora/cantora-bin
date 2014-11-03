@@ -142,5 +142,8 @@ end
 # Create a new parser
 parser = Nokogiri::XML::SAX::Parser.new(EventListener.new)
 
-# Feed the parser some XML
-parser.parse(File.open(ARGV[0]))
+if ARGV.size < 1
+  parser.parse($stdin)
+else
+  parser.parse(File.open(ARGV[0]))
+end

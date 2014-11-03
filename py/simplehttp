@@ -1,0 +1,10 @@
+#!/usr/bin/python3
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+ 
+def run():
+  server_address = ('127.0.0.1', 8000)
+  httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+  httpd.serve_forever()
+
+if __name__ == '__main__':
+  run()
