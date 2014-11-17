@@ -1,0 +1,57 @@
+#!/bin/sh
+
+source cantora-shlib.sh
+
+usage () {
+  echo "$0 NETIF LOCALIP LISTENPORT [FILTERPORT ...]"
+  exit 1
+}
+
+#not port 22 and not port 8989 
+sniff () {
+  iface=$1
+  shift
+  tcpdump -s 0 -U -n -w - -i $iface $@
+}
+
+match_tcp_host_port () {
+  printf \
+    'tcp and ((src host %s and src port %d) or (dst host %s and dst port %d))' \
+    $1 $2 $1 $2
+}
+
+pcap_filter () {
+  localip=$1
+  shift
+
+  result="not ($(match_tcp_host_port $localip $listenport))" \
+         || err_exit "failed to create port match string"
+  while (( "$#" )); do 
+    result="$result and not ($(match_tcp_host_port $localip $1))" \
+           || err_exit "failed to create port match string"
+    shift
+  done
+
+  echo $result
+}
+
+if [ "$#" -lt "3" ]; then
+  usage
+fi
+
+if help_flag_exists $@; then
+  usage
+fi
+
+netif=$1
+shift
+localip=$1
+shift
+listenport=$1
+shift
+
+pf=$(pcap_filter $localip $listenport $@)
+
+while sniff $netif $pf | nc -vl $localip $listenport; do
+  echo 'connection closed. restarting...'
+done

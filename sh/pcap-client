@@ -1,0 +1,23 @@
+#!/bin/bash
+
+source cantora-shlib.sh
+
+usage () {
+  echo "$0 HOST PORT [NETCAT_ARGS]"
+  exit 1
+}
+
+if [ "$#" -lt "2" ]; then
+  usage
+fi
+
+if help_flag_exists $@; then
+  usage
+fi
+
+host=$1
+shift
+port=$1
+shift
+
+wireshark -k -i <(nc $host $port $@)
