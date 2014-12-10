@@ -1,0 +1,12 @@
+#!/usr/bin/gawk -f
+BEGIN {
+	FS="^[0-9]+ "
+}
+
+match($0, /^([0-9]+)/, cap) { 
+  for( i=0; i<=cap[1]; i++ ) {
+    printf "*";
+  };
+  printf " "
+  print $2
+}

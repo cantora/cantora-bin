@@ -1,0 +1,8 @@
+#!/bin/sh
+
+dir="."
+if [ "$#" -gt 0 ]; then
+  dir=$@
+fi
+
+find $dir -type l -printf '%d %f -> %l\n' -o -printf '%d %f \n'
