@@ -1,5 +1,5 @@
 #!/bin/sh
 
-git annex fsck
+git annex fsck -q
 
 
