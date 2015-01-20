@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+
+import socketserver
+import time
+import threading
+import sys
+
+class Tracker(object):
+
+  def __init__(self):
+    self.table_lock = threading.Lock()
+    self.cx_table = {}
+
+  def updated_record(self, peer_addr, byte_count):
+    #print('update table for peer_addr %r' % (peer_addr,))
+    record = self.cx_table.get(peer_addr, {
+      "err": None,
+      "created": time.time()
+    })
+    record["t"] = time.time()
+    count = record.get("count", 0)
+    if byte_count < count:
+      raise Exception("BUG: byte_count %r < %r count" % (byte_count, count))
+
+    record["count"] = byte_count
+    record["status"] = "alive"
+
+    return record
+
+  def update_cx(self, peer_addr, byte_count):
+    with self.table_lock:
+      record = self.updated_record(peer_addr, byte_count)
+      self.cx_table[peer_addr] = record
+      sys.stderr.write('[+]' if byte_count < 1 else '[*]')
+      sys.stderr.write(' (%s)' % len(self.cx_table))
+      sys.stderr.write(' %s:%s' % (peer_addr[0], peer_addr[1]))
+      sys.stderr.write(' life=%.1f' % (int(time.time() - record["created"])/60.0))
+      if byte_count > 0:
+        sys.stderr.write(' count=%s' % byte_count)
+      sys.stderr.write('\n')
+
+  def finish_cx(self, peer_addr, byte_count, err=None):
+    with self.table_lock:
+      record = self.updated_record(peer_addr, byte_count)
+      record["status"] = "dead"
+      self.cx_table[peer_addr] = record
+      sys.stderr.write('[-]')
+      sys.stderr.write(' (%s)' % len(self.cx_table))
+      sys.stderr.write(' %s:%s life=%.1f count=%s' % (peer_addr[0],
+                                                    peer_addr[1],
+                                                    int(time.time() - record["created"])/60.0,
+                                                    byte_count))
+      
+      if err:
+        record["err"] = err
+        sys.stderr.write(' err=%r' % err)
+      sys.stderr.write('\n')
+
+class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
+  def __init__(self, *args, **kwargs):
+    self.allow_reuse_address = True
+    socketserver.TCPServer.__init__(self, *args, **kwargs)
+
+def main(host, port):
+  tracker = Tracker()
+
+  def track_cx(client_addr, request):
+    count = 0
+    tracker.update_cx(client_addr, count)
+
+    while True:
+      try:
+        data = request.recv(4096)
+      except Exception as e:
+        tracker.finish_cx(client_addr, count, e)
+        break
+
+      dlen = len(data)
+      if dlen < 1:
+        tracker.finish_cx(client_addr, count)
+        break
+
+      count += dlen
+      tracker.update_cx(client_addr, count)
+
+  class CxHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+      #t = threading.Thread(target=track_cx, args=(self.client_address, self.request))
+      #t.daemon = True  #thread dies when main thread exits.
+      #t.start()
+      track_cx(self.client_address, self.request)
+
+  sys.stderr.write('binding to %s:%s\n' % (host, port))
+  server = Server((host, port), CxHandler)
+  server.serve_forever()
+
+if __name__ == "__main__":
+  if len(sys.argv) == 2:
+    main("localhost", int(sys.argv[1]))
+  elif len(sys.argv) == 3:
+    main(sys.argv[2], int(sys.argv[1]))
+  else:
+    print('usage: PORT [BIND-ADDR]')
