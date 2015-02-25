@@ -1,0 +1,9 @@
+#!/bin/sh
+
+refs=$(git log --oneline $1 | tac | awk '{ print $1 }')
+for commit in $refs; do
+  git show $commit --color | less -r
+  if ! read; then
+    break
+  fi
+done
