@@ -1,0 +1,29 @@
+#!/bin/bash
+
+source cantora-shlib.sh
+
+# pinentry commands:
+#   SETDESC             | set the desciption of the prompt
+#   SETPROMPT           | set the prompt title
+#   SETREPEAT           | ??
+#   SETREPEATERROR      | ??
+#   SETERROR            | ??
+#   SETOK               | set the display text of the "ok" button
+#   SETNOTOK            | set the display text of the "not ok" button
+#   SETCANCEL           | set the display text of the "cancel" button
+#   GETPIN              | prompt for a password
+#   CONFIRM             | ??
+#   MESSAGE             | ??
+#   SETQUALITYBAR       | ?? 
+#   SETQUALITYBAR_TT    | ??
+#   GETINFO             | ?? 
+#   SETTITLE            | ??
+#   SETTIMEOUT          | return "canceled" from GETPIN after N idle seconds
+
+
+pwd=$(pw_get)
+if [ -n "$pwd" ]; then
+  PASSWORD="$pwd" exec "$@"
+else
+  exit 1
+fi

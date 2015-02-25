@@ -48,3 +48,19 @@ help_flag_exists () {
 
   return 1
 }
+
+pw_prompt () {
+  ttyname=$(tty)
+  if [ -O $ttyname ]; then #test that file is owned by this user
+    tmpfile=$(mktemp)
+    echo 'GETPIN' > $tmpfile
+    pinentry-curses --ttyname "$ttyname" < $tmpfile 2>/dev/null
+    rm -f $tmpfile
+  else
+    echo 'GETPIN' | pinentry-gtk-2
+  fi
+}
+
+pw_get () {
+  pw_prompt | grep '^D ' | head -1 | sed 's/^D //'
+}
