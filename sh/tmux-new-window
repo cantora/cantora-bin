@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo 'enter command:'
+read cmd
+
+bash -c "$cmd"
+
+
