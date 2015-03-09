@@ -1,0 +1,104 @@
+#!/bin/bash
+
+source cantora-shlib.sh
+
+gr_check () {
+  if gr_reviewing; then
+    return 0
+  fi
+
+  err_exit 'not currently reviewing!'
+}
+
+gr_current_branch () {
+  git symbolic-ref --short HEAD 2>/dev/null || true
+}
+
+gr_review_branch () {
+  b=$(gr_current_branch)
+  if [[ "$b" =~ ^gitreview- ]]; then
+    echo $b
+    return 0
+  fi
+
+  return 1
+}
+
+gr_review_branch_or_die () {
+  if gr_review_branch; then
+    return 0
+  fi
+
+  err_exit "expected to be on a review branch! on '$b'"
+}
+
+gr_reviewing () {
+  if gr_review_branch > /dev/null; then
+    if [ -n "$GR_DEST" ]; then 
+      return 0;
+    fi
+  fi
+
+  return 1
+}
+
+gr_create_review_branch () {
+  if gr_reviewing; then
+    return 1
+  fi
+
+  tmpfile=$(mktemp)
+  rm -f $tmpfile
+  name="gitreview-$(basename $tmpfile)"
+  git checkout -b $name    
+
+  gr_review_branch_or_die
+}
+
+gr_get_or_create_review_branch () {
+  if gr_review_branch; then
+    return 0;
+  fi
+
+  gr_create_review_branch
+}
+
+gr_current_commit () {
+  git show --format="format:%H"
+}
+
+gr_dest_or_die () {
+  if [ -z "$GR_DEST" ]; then
+    err_exit 'GR_DEST is undefined'
+  fi
+
+  echo $GR_DEST
+}
+
+gr_status () {
+  printf '[%s] -> [%s]' "$(gr_current_branch)" "$GR_DEST"
+}
+
+gr_range () {
+  echo "HEAD..$(gr_dest_or_die)"
+}
+
+gr_list_n_commits () {
+  non_empty_str_arg $1
+
+  #echo "gr_list_n_commits $1"
+  git log --reverse \
+          --format="format:%h %cr %cn %s" \
+          $(gr_range) \
+    | head -n "$1"
+}
+
+gr_nth_commit () {
+  non_empty_str_arg $1
+
+  git log --reverse \
+          --format="format:%H" \
+          $(gr_range) \
+    | head -n $1 \
+    | tail -1
+}

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source git-review-lib
+
+gr_check
+amt="$1"
+if [ -z "$amt" ]; then
+  amt="50"
+fi
+  
+gr_list_n_commits $amt

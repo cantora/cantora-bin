@@ -1,0 +1,12 @@
+#!/bin/sh
+
+source git-review-lib
+
+gr_check
+
+if [ -z "$1" ]; then 
+  echo 'usage: git-review-merge N'
+  exit 1
+fi
+
+git merge $(gr_nth_commit $1)

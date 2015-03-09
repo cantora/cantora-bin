@@ -1,0 +1,27 @@
+#!/bin/bash
+
+source git-review-lib
+
+if gr_reviewing; then
+  gr_status
+  echo
+  exit 0
+fi
+
+if [ -z "$1" ]; then
+  echo 'usage: git-review DEST-REF'
+  exit 1
+fi
+
+echo 'entering "git-review" mode: is the current repo state safe for branching/merging? Y/n'
+read resp
+if [ "$resp" != "Y" ]; then
+  exit 1
+fi
+
+export GR_DEST="$1"
+gr_get_or_create_review_branch >/dev/null
+
+gr_status; echo
+
+bash

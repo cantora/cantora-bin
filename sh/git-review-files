@@ -1,0 +1,12 @@
+#!/bin/sh
+
+source git-review-lib
+
+gr_check
+
+if [ -z "$1" ]; then 
+  echo 'usage: git-review-show N'
+  exit 1
+fi
+
+git diff-tree -r "HEAD..$(gr_nth_commit $1)"
