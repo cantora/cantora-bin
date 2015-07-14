@@ -1,0 +1,3 @@
+#!/bin/sh
+
+cat | tr -c ' -~\n\t\v\r' ?

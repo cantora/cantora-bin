@@ -1,0 +1,34 @@
+#!/bin/sh
+# based on script provided in http://superuser.com/questions/594116/clean-up-my-gnupg-keyring
+
+echo -n "expired keys: "
+for expiredKey in $(gpg2 --list-keys | awk '/^pub.* \[expired\: / {id=$2; sub(/^.*\//, "", id); print id}' | fmt -w 999 ); do
+    echo "$expiredKey is expired"
+    gpg2 --delete-keys $expiredKey >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "  $expiredKey deleted"
+    else
+        echo "  $expiredKey unchanged"
+    fi
+done
+echo done.
+
+#echo -n "Update Keys: "
+#for keyid in $(gpg -k | grep ^pub | grep -v expired: | grep -v revoked: | cut -d/ -f2 | cut -d' ' -f1); do
+#    echo -n "$keyid"
+#    gpg2 --batch --quiet --edit-key "$keyid" check clean cross-certify save quit > /dev/null 2>&1
+#    if [ $? -eq 0 ]; then
+#        echo -n "(OK), "
+#    else
+#        echo -n "(FAIL), "
+#    fi
+#done
+#echo done.
+
+echo 'refresh keys'
+gpg2 --refresh-keys
+if [ $? -eq 0 ]; then
+    echo "Refresh OK"
+else
+     echo "Refresh FAIL."
+fi
