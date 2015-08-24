@@ -1,0 +1,96 @@
+#!/bin/sh
+
+assert_installed () {
+  command -v "$1" >/dev/null 2>&1 \
+  || { echo >&2 "$1 needed but not found in PATH";
+       exit 1;
+     }
+}
+
+usage () {
+  echo 'usage: SHA256 NAME URL'
+}
+
+valid_sha256_string () {
+  result=$(printf "$1" | wc -c)
+  if [ "$result" = "64" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+calc_sha256sum () {
+  sha256sum -b "$1" \
+  | awk '{ print $1; }'
+}
+
+### MAIN ###
+
+assert_installed wget
+assert_installed sha256sum
+assert_installed printf
+assert_installed wc
+assert_installed awk
+
+set -e
+
+if ! valid_sha256_string "$1"; then
+  echo 'sha256 argument is an invalid sha256 checksum'
+  usage
+  exit 1
+fi
+
+if [ -z "$2" ]; then
+  echo 'name argument is empty'
+  usage
+  exit 1
+fi
+
+if [ -z "$3" ]; then
+  echo 'url argument is empty'
+  usage
+  exit 1
+fi
+
+if [ -f "$2" ]; then
+  echo 'destination file already exists'
+  exit 1
+fi
+
+unverified=".unverified.${2}"
+
+if [ -f "$unverified" ]; then
+  echo "unexpected error: $unverified already exists"
+  exit 1
+fi
+
+if ! wget -O "$unverified" "$3"; then
+  echo 'wget failed!'
+  exit 1
+fi
+
+if ! [ -f "$unverified" ]; then
+  echo 'downloaded file is missing!'
+  exit 1
+fi
+
+found_sum=$(calc_sha256sum "$unverified")
+
+if [ "$1" != "$found_sum" ]; then
+  echo "checksum mismatch: expected $1. got $found_sum"
+  rm -f "$unverified"
+  exit 1
+fi
+
+mv "${unverified}" ".${found_sum}_${unverified}"
+
+# if somehow $1 != $found_sum, as checked above, this part will fail
+verified=".${1}_${unverified}"
+if ! [ -f "$verified" ]; then
+  echo 'unexpected error: result file not found.'
+  exit 1
+fi
+mv "$verified" "${2}"
+
+echo "successfully got $2 with checksum $1."
