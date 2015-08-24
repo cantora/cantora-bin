@@ -1,0 +1,29 @@
+#!/bin/sh
+
+match=$1
+shift
+replacement=$1
+shift
+name=$1
+shift
+
+rest=$@
+
+if [ -z "$match" -o -z "$replacement" -o -z "$name" ]; then
+  echo 'usage: MATCH_EMAIL REPLACEMENT_EMAIL REPLACEMENT_NAME'
+  exit 1
+fi
+
+script=$(cat <<-SETVAR
+  if [ "\$GIT_AUTHOR_EMAIL" = "$match" ]; then
+    GIT_AUTHOR_EMAIL="$replacement";
+    GIT_AUTHOR_NAME="$name";
+    GIT_COMMITTER_EMAIL=\$GIT_AUTHOR_EMAIL;
+    GIT_COMMITTER_NAME="\$GIT_AUTHOR_NAME";
+  fi
+SETVAR
+)
+
+#echo $script
+#echo $@
+git filter-branch --env-filter "$script" $@ -- --all

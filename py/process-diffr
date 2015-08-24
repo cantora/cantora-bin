@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+
+import sys
+import subprocess
+import os.path
+
+class Handler(object):
+
+  def files_differ(self, rel_path):
+    raise Exception("not implemented")
+
+  def path_only_in(self, dir, path):
+    raise Exception("not implemented")
+
+class OrgHandler(Handler):
+
+  def __init__(self):
+    self.tree = {}
+  
+  def add(self, tag, rel_path):
+    parts = rel_path.split(b"/")
+
+    node = self.tree
+    for part in parts[:-1]:
+      print('add part %r' % part)
+      node = node.setdefault(part, {})
+
+    node[parts[-1]] = tag
+
+  def files_differ(self, rel_path):    
+    self.add(b"diff", rel_path)
+
+  def path_only_in(self, is_left, rel_path):
+    tag = b"deleted" if is_left else b"added"
+
+    self.add(tag, rel_path)
+
+  def write_node(self, node, depth, f):
+    for key in sorted(node.keys()):
+      #print('%s %r' % (" "*depth, key))
+      f.write(b"*"*(depth+1))
+      f.write(b" ")
+      child = node[key]
+      if isinstance(child, bytes):
+        f.write(b"TODO [" + child + b"] ")
+      else:
+        f.write(b"[0%] ")
+      f.write(key)
+      f.write(b"\n")
+
+      if isinstance(child, dict):
+        self.write_node(child, depth+1, f)
+
+  def write(self, output_path):
+    with open(output_path, "wb") as f:
+      f.write(b"* [0%] root\n")
+      self.write_node(self.tree, 1, f)
+
+class DirTreeHandler(Handler):
+  OUTPUT_PATH = b"process-diffr"
+
+  def __init__(self, abs_left, abs_right):
+    self.abs_left = self.outpath_rel(b"source", b"left")
+    self.abs_right = self.outpath_rel(b"source", b"right")
+    self.create_link(abs_left, self.abs_left)
+    self.create_link(abs_right, self.abs_right)
+
+  def create_link(self, source, dest):
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    print('create link %r -> %r' % (source, dest))
+    if not os.path.islink(dest):
+      os.symlink(source, dest)
+
+  def source_rel(self, source, rel_path):
+    dummy = os.path.join(b"dummy", rel_path)
+    prefix = os.path.relpath(source, os.path.dirname(self.outpath_rel(dummy)))
+    return os.path.join(prefix, rel_path)
+
+  def left_rel(self, rel_path):
+    return self.source_rel(self.abs_left, rel_path)
+
+  def right_rel(self, rel_path):
+    return self.source_rel(self.abs_right, rel_path)
+
+  def outpath_rel(self, *parts):
+    return os.path.join(self.OUTPUT_PATH, *parts)
+
+  def dest_path(self, rel_path, is_left):
+    dir = b"left" if is_left else b"right"
+
+    return self.outpath_rel(dir, rel_path)
+
+  def unified_path(self, rel_path, is_left):
+    suffix = b".left" if is_left else b".right"
+
+    return self.outpath_rel(b"unified", rel_path + suffix)
+
+  def files_differ(self, rel_path):
+    dest_left = self.dest_path(rel_path, True)
+    unified_left = self.unified_path(rel_path, True)
+    dest_right = self.dest_path(rel_path, False)
+    unified_right = self.unified_path(rel_path, False)
+
+    path_left = self.left_rel(rel_path)
+    self.create_link(path_left, dest_left)
+    self.create_link(path_left, unified_left)
+    path_right = self.right_rel(rel_path)
+    self.create_link(path_right, dest_right)
+    self.create_link(path_right, unified_right)
+
+  def path_only_in(self, is_left, rel_path):
+    if is_left:
+      path = self.left_rel(rel_path)
+      dest = self.dest_path(rel_path, True)
+      unified_dest = self.unified_path(rel_path, True)
+    else:
+      path = self.right_rel(rel_path)
+      dest = self.dest_path(rel_path, False)
+      unified_dest = self.unified_path(rel_path, False)
+    
+    self.create_link(path, dest)
+    self.create_link(path, unified_dest)
+
+def part_err(line, part):
+  sys.stderr.write("didnt understand line %r. part: %r\n" % (line, part))
+  sys.exit(1)
+
+def line_err(line):
+  sys.stderr.write("didnt understand line %r\n" % line)
+  sys.exit(1)
+
+
+def remove_prefix(line, s, prefix):
+  if not s.startswith(prefix):
+    part_err(line, "prefix %r not found in %r" % (prefix, s))
+
+  return s[len(prefix):]
+
+def remove_suffix(line, s, suffix):
+  if not s.endswith(suffix):
+    part_err(line, "suffix %r not found in %r" % (suffix, s))
+
+  return s[:-(len(suffix))]
+
+class Processor(object):
+  JUMP_TABLE = {
+    b"Files ": 'files_differ',
+    b"Only in ": 'path_only_in'
+  }
+
+  def __init__(self, abs_left, abs_right, *handlers):
+    self.abs_left = abs_left
+    self.abs_right = abs_right
+    self.handlers = handlers
+
+  def process_files_differ(self, line):
+    parts = line.split(b' and ')
+    if len(parts) != 2:
+      line_err(line)
+
+    (left_file, right_file) = parts
+    right_file = remove_suffix(line, right_file, b" differ\n")
+
+    left_file = remove_prefix(line, left_file, self.abs_left)
+    right_file = remove_prefix(line, right_file, self.abs_right)
+
+    if left_file != right_file:
+      part_err(line, "%r != %r" % (left_file, right_file))
+
+    if left_file[0] == 0x2f:
+      left_file = left_file[1:]
+
+    #print('process %r and %r' % (left_file, right_file))
+    return (left_file,)
+  
+  def process_path_only_in(self, line):
+    parts = line.split(b": ")
+    if len(parts) != 2:
+      line_err(line)
+  
+    (dir, child) = parts
+    child = remove_suffix(line, child, b"\n")
+
+    base = None
+    if dir.startswith(self.abs_left):
+      is_left = True
+      base = remove_prefix(line, dir, self.abs_left)
+    elif dir.startswith(self.abs_right):
+      is_left = False
+      base = remove_prefix(line, dir, self.abs_right)
+    else:
+      part_err(line, "%r is not either the left or right base" % dir)
+
+    if len(base) > 0:
+      if base[0] == 0x2f:
+        base = base[1:]
+      path = os.path.join(base, child)
+    else:
+      path = child
+
+    #print('process %r only in %r' % (child, dir))
+    return (is_left, path)
+
+  def handle(self, fn_name, data):
+    for handler in self.handlers:
+      fn = getattr(handler, fn_name)
+      fn(*data)
+
+  def process(self, line):
+    for (prefix, fn_name) in self.JUMP_TABLE.items():
+      if line.startswith(prefix):
+        #print('matched %r' % prefix)
+        fn = getattr(self, 'process_' + fn_name)
+        result = fn(line[len(prefix):])
+        self.handle(fn_name, result)
+        return;
+  
+    line_err(line)
+
+def err_exit(msg):
+  print(msg)
+  sys.exit(1)
+
+def main(left, right, *args):
+  abs_left = os.path.abspath(left).encode('utf-8')
+  abs_right = os.path.abspath(right).encode('utf-8')
+
+  if os.path.exists(DirTreeHandler.OUTPUT_PATH):
+    err_exit('output path %r already exists' % dir_handler.OUTPUT_PATH)
+  dir_handler = DirTreeHandler(abs_left, abs_right)
+
+  org_handler = OrgHandler()
+  processor = Processor(abs_left, abs_right, dir_handler, org_handler)
+
+  diff_cmd = ["/usr/bin/env",
+              "diff",
+              "-qbur"]
+  for exclude in args:
+    diff_cmd += ["--exclude", exclude]
+
+  diff_cmd += [abs_left, abs_right]
+
+  subproc = subprocess.Popen(diff_cmd,
+                             stdout=subprocess.PIPE)
+  stream = subproc.stdout
+  line = stream.readline()
+  while line:
+    processor.process(line)
+    line = stream.readline()
+
+  org_handler.write("process-diffr.org")
+  
+if __name__ == "__main__":
+  if len(sys.argv) < 3:
+    err_exit("usage: process-diffr DIR DIR")
+
+  main(sys.argv[1], sys.argv[2], *sys.argv[3:])
