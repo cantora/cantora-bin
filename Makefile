@@ -14,13 +14,15 @@ all: $(BINS)
 $(BUILD)/%: %.c
 	$(CXX_CMD) $(CXX_FLAGS) $< -o $@
 
-install: $(BINS)
+.PHONY: permissions
+permissions: $(BINS)
+	find ./build ./sh ./rb ./py ./awk \
+	  ! -perm 755 \
+	  -exec chmod 755 \{\} \;
+
+.PHONY: install
+install: permissions
 	mkdir -p ~/bin
-	chmod 755 $(CURDIR)/build/*
-	chmod 755 $(CURDIR)/sh/*
-	chmod 755 $(CURDIR)/rb/*
-	chmod 755 $(CURDIR)/py/*
-	chmod 755 $(CURDIR)/awk/*
 	cd ~/bin && for f in $(CURDIR)/build/*; do ln -fs $$f; done
 	cd ~/bin && for f in $(CURDIR)/sh/*; do ln -fs $$f; done
 	cd ~/bin && for f in $(CURDIR)/rb/*; do ln -fs $$f; done
