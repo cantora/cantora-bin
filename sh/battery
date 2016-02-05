@@ -1,0 +1,14 @@
+#!/bin/sh
+
+base=/sys/class/power_supply
+naming=energy
+
+if [ ! -d "$base" ]; then
+  exit 1
+fi
+
+for i in $(find "$base" -name 'BAT[0-9]'); do
+  now=$(cat $i/${naming}_now)
+  full=$(cat $i/${naming}_full)
+  printf '%s=%d%% ' $(basename $i) $(( 100 * $now / $full))
+done
